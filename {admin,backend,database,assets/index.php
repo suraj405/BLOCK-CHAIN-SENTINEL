@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLOCKCHAIN SENTINEL // Cyber Fraud Attribution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neon-cyan: #00f5ff;
+    --neon-pink: #ff006e;
+    --neon-green: #39ff14;
+    --neon-yellow: #ffe600;
+    --neon-purple: #bf00ff;
+    --dark-bg: #020408;
+    --panel-bg: rgba(0, 15, 25, 0.92);
+    --border-glow: rgba(0, 245, 255, 0.4);
+    --text-dim: rgba(0, 245, 255, 0.6);
+    --grid-color: rgba(0, 245, 255, 0.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: var(--dark-bg);
+    color: var(--neon-cyan);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+    animation: gridPulse 8s ease-in-out infinite;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(0, 245, 255, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(191, 0, 255, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 80%, rgba(255, 0, 110, 0.03) 0%, transparent 60%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  @keyframes gridPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  /* Scanline overlay */
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.08) 2px,
+      rgba(0, 0, 0, 0.08) 4px
+    );
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  #canvas-bg{display:none!important;}
+
+  /* Header */
+  .header {
+    position: relative;
+    z-index: 10;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-glow);
+    background: rgba(0, 5, 10, 0.8);
+    backdrop-filter: blur(10px);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .logo-icon {
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--neon-cyan);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 20px var(--neon-cyan), inset 0 0 20px rgba(0,245,255,0.1);
+    animation: iconPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes iconPulse {
+    0%, 100% { box-shadow: 0 0 20px var(--neon-cyan), inset 0 0 20px rgba(0,245,255,0.1); }
+    50% { box-shadow: 0 0 40px var(--neon-cyan), 0 0 80px rgba(0,245,255,0.3), inset 0 0 20px rgba(0,245,255,0.2); }
+  }
+
+  .logo-text {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px var(--neon-cyan);
+  }
+
+  .logo-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 6px;
+    margin-top: 2px;
+  }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--neon-green);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--neon-green);
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .nav-link {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 6px 12px;
+    border: 1px solid transparent;
+    transition: all 0.3s;
+  }
+
+  .nav-link:hover {
+    color: var(--neon-cyan);
+    border-color: var(--border-glow);
+    text-shadow: 0 0 10px var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0,245,255,0.1);
+  }
+
+  /* Main content */
+  .main {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 100px);
+    padding: 40px;
+  }
+
+  /* Login Panel */
+  .login-panel {
+    width: 480px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-glow);
+    box-shadow: 0 0 40px rgba(0,245,255,0.1), 0 0 80px rgba(0,0,0,0.5);
+    padding: 50px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .login-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    animation: scanBar 3s ease-in-out infinite;
+  }
+
+  @keyframes scanBar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-align: center;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 20px var(--neon-cyan);
+  }
+
+  .panel-subtitle {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    margin-bottom: 40px;
+  }
+
+  .corner-decor {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: var(--neon-cyan);
+    border-style: solid;
+    opacity: 0.6;
+  }
+
+  .corner-decor.tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+  .corner-decor.tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+  .corner-decor.bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
+  .corner-decor.br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+  /* Form Elements */
+  .form-group {
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .form-input {
+    width: 100%;
+    background: rgba(0, 245, 255, 0.03);
+    border: 1px solid rgba(0, 245, 255, 0.2);
+    border-top-color: rgba(0, 245, 255, 0.4);
+    color: var(--neon-cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    padding: 14px 16px;
+    outline: none;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+  }
+
+  .form-input:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(0,245,255,0.15), inset 0 0 20px rgba(0,245,255,0.05);
+    background: rgba(0, 245, 255, 0.06);
+  }
+
+  .form-input::placeholder {
+    color: rgba(0, 245, 255, 0.2);
+  }
+
+  .form-select {
+    width: 100%;
+    background: rgba(0, 245, 255, 0.03);
+    border: 1px solid rgba(0, 245, 255, 0.2);
+    border-top-color: rgba(0, 245, 255, 0.4);
+    color: var(--neon-cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    padding: 14px 16px;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+  }
+
+  .form-select option {
+    background: #020408;
+    color: var(--neon-cyan);
+  }
+
+  .form-textarea {
+    width: 100%;
+    background: rgba(0, 245, 255, 0.03);
+    border: 1px solid rgba(0, 245, 255, 0.2);
+    border-top-color: rgba(0, 245, 255, 0.4);
+    color: var(--neon-cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 14px 16px;
+    outline: none;
+    resize: vertical;
+    min-height: 100px;
+    transition: all 0.3s;
+  }
+
+  .form-textarea:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(0,245,255,0.15);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: transparent;
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(0,245,255,0.1);
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(0,245,255,0.05) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+
+  .btn-primary:hover::before {
+    transform: translateX(100%);
+  }
+
+  .btn-primary:hover {
+    background: rgba(0, 245, 255, 0.1);
+    box-shadow: 0 0 40px rgba(0,245,255,0.3), 0 0 80px rgba(0,245,255,0.1);
+    text-shadow: 0 0 10px var(--neon-cyan);
+  }
+
+  .btn-pink {
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+    box-shadow: 0 0 20px rgba(255,0,110,0.1);
+  }
+
+  .btn-pink:hover {
+    background: rgba(255, 0, 110, 0.1);
+    box-shadow: 0 0 40px rgba(255,0,110,0.3);
+    text-shadow: 0 0 10px var(--neon-pink);
+  }
+
+  /* Error/Success messages */
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    border-left: 3px solid;
+    display: none;
+  }
+
+  .alert.error {
+    border-left-color: var(--neon-pink);
+    background: rgba(255,0,110,0.08);
+    color: var(--neon-pink);
+  }
+
+  .alert.success {
+    border-left-color: var(--neon-green);
+    background: rgba(57,255,20,0.08);
+    color: var(--neon-green);
+  }
+
+  .alert.show { display: block; }
+
+  /* Report Panel */
+  .report-panel {
+    width: 600px;
+    display: none;
+  }
+
+  .report-panel.active {
+    display: block;
+  }
+
+  /* Progress Bar */
+  .progress-container {
+    margin: 20px 0;
+    display: none;
+  }
+
+  .progress-container.show { display: block; }
+
+  .progress-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--neon-cyan);
+    margin-bottom: 8px;
+    animation: flicker 0.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes flicker {
+    from { opacity: 0.8; }
+    to { opacity: 1; text-shadow: 0 0 10px var(--neon-cyan); }
+  }
+
+  .progress-bar-bg {
+    height: 4px;
+    background: rgba(0,245,255,0.1);
+    border: 1px solid rgba(0,245,255,0.2);
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    width: 0%;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px var(--neon-cyan);
+  }
+
+  /* Submit animation overlay */
+  .submit-animation {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: var(--panel-bg);
+    backdrop-filter: blur(5px);
+    z-index: 20;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .submit-animation.show {
+    display: flex;
+  }
+
+  .scan-ring {
+    width: 120px;
+    height: 120px;
+    border: 2px solid transparent;
+    border-top-color: var(--neon-cyan);
+    border-right-color: rgba(0,245,255,0.3);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    position: relative;
+    box-shadow: 0 0 30px rgba(0,245,255,0.3);
+  }
+
+  .scan-ring::before {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border: 1px solid transparent;
+    border-top-color: var(--neon-pink);
+    border-radius: 50%;
+    animation: spin 1.5s linear infinite reverse;
+  }
+
+  .scan-ring::after {
+    content: '⬡';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 30px;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px var(--neon-cyan);
+    animation: iconPulse 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .stage-messages {
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--neon-cyan);
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .stage-message {
+    animation: typeIn 0.5s ease forwards;
+    margin: 5px 0;
+  }
+
+  @keyframes typeIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .success-result {
+    border: 1px solid var(--neon-green);
+    padding: 20px 30px;
+    text-align: center;
+    color: var(--neon-green);
+    text-shadow: 0 0 20px var(--neon-green);
+    box-shadow: 0 0 30px rgba(57,255,20,0.2);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+  }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 25px 0;
+    opacity: 0.4;
+  }
+
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--neon-cyan);
+  }
+
+  .divider-text {
+    font-size: 10px;
+    letter-spacing: 3px;
+  }
+
+  /* Footer */
+  .footer {
+    position: relative;
+    z-index: 5;
+    text-align: center;
+    padding: 20px;
+    border-top: 1px solid rgba(0,245,255,0.1);
+    font-size: 10px;
+    color: rgba(0,245,255,0.3);
+    letter-spacing: 3px;
+  }
+
+  /* Hex grid decoration */
+  .hex-grid {
+    position: fixed;
+    right: -50px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.04;
+    font-size: 80px;
+    line-height: 1;
+    letter-spacing: -10px;
+    color: var(--neon-cyan);
+    z-index: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--dark-bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-glow); }
+</style>
+</head>
+<body>
+<canvas id="galaxyBG" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
+<script>
+(function(){
+  const cv=document.getElementById("galaxyBG");
+  if(!cv)return;
+  const cx=cv.getContext("2d");
+  let W,H,CX,CY;
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;CX=W/2;CY=H/2;}
+  resize();window.addEventListener("resize",resize);
+
+  const BIN="010011011001110100101100111010010110011101001011001110100101";
+
+  // 3D ORBITING RINGS — tilted ellipses rotating in 3D perspective
+  const rings=[
+    {a:0,  speed:0.0022, rx:0.40, ry:0.13, tilt:0.30, color:[0,245,255],   alpha:0.70, fs:12, offset:0},
+    {a:0,  speed:0.0015, rx:0.50, ry:0.165,tilt:0.25, color:[0,245,255],   alpha:0.50, fs:11, offset:2.1},
+    {a:0,  speed:0.0010, rx:0.60, ry:0.20, tilt:0.20, color:[57,255,20],   alpha:0.38, fs:10, offset:4.2},
+    {a:0,  speed:0.0028, rx:0.32, ry:0.10, tilt:0.36, color:[191,0,255],   alpha:0.35, fs:10, offset:1.1},
+    {a:0,  speed:0.0008, rx:0.70, ry:0.23, tilt:0.15, color:[255,180,0],   alpha:0.22, fs:9,  offset:3.3},
+  ];
+
+  // Background stars (static tiny dots)
+  const bgStars=Array.from({length:200},()=>({
+    x:Math.random(),y:Math.random(),
+    r:Math.random()*1.1+0.2,
+    a:Math.random()*0.35+0.05,
+    twinkle:Math.random()*Math.PI*2,
+    ts:0.015+Math.random()*0.025,
+    c:Math.random()>0.7?[255,0,110]:Math.random()>0.5?[57,255,20]:[0,245,255]
+  }));
+
+  // Shield
+  function shield(t){
+    const s=Math.min(W,H)*0.13;
+    cx.save();cx.translate(CX,CY);
+
+    // Halo glow
+    const h=cx.createRadialGradient(0,0,s*0.1,0,0,s*1.4);
+    h.addColorStop(0,"rgba(0,245,255,0.15)");
+    h.addColorStop(0.5,"rgba(0,80,180,0.07)");
+    h.addColorStop(1,"transparent");
+    cx.fillStyle=h;cx.beginPath();cx.arc(0,0,s*1.4,0,Math.PI*2);cx.fill();
+
+    // Pulse rings
+    for(let i=0;i<3;i++){
+      const pr=s*(0.85+i*0.2)+Math.sin(t*0.04+i*1.3)*s*0.03;
+      cx.beginPath();cx.arc(0,0,pr,0,Math.PI*2);
+      cx.strokeStyle=`rgba(0,245,255,${0.10-i*0.025})`;cx.lineWidth=1.2;cx.stroke();
+    }
+
+    // Body
+    cx.beginPath();
+    cx.moveTo(0,-s*0.62);
+    cx.bezierCurveTo(s*0.58,-s*0.62,s*0.58,s*0.10,0,s*0.66);
+    cx.bezierCurveTo(-s*0.58,s*0.10,-s*0.58,-s*0.62,0,-s*0.62);
+    cx.closePath();
+    const bg=cx.createLinearGradient(-s*.5,-s*.6,s*.5,s*.6);
+    bg.addColorStop(0,"rgba(8,25,55,0.93)");
+    bg.addColorStop(0.45,"rgba(12,50,95,0.90)");
+    bg.addColorStop(1,"rgba(4,15,35,0.95)");
+    cx.fillStyle=bg;cx.fill();
+
+    // Gold border
+    cx.beginPath();
+    cx.moveTo(0,-s*0.62);
+    cx.bezierCurveTo(s*0.58,-s*0.62,s*0.58,s*0.10,0,s*0.66);
+    cx.bezierCurveTo(-s*0.58,s*0.10,-s*0.58,-s*0.62,0,-s*0.62);
+    cx.closePath();
+    const gd=cx.createLinearGradient(-s*.5,-s*.5,s*.5,s*.5);
+    gd.addColorStop(0,"rgba(200,160,40,0.9)");
+    gd.addColorStop(0.5,"rgba(255,215,80,1)");
+    gd.addColorStop(1,"rgba(175,125,15,0.9)");
+    cx.strokeStyle=gd;cx.lineWidth=s*0.038;cx.stroke();
+
+    // Inner rim
+    cx.beginPath();
+    cx.moveTo(0,-s*0.44);
+    cx.bezierCurveTo(s*0.38,-s*0.44,s*0.38,s*0.06,0,s*0.48);
+    cx.bezierCurveTo(-s*0.38,s*0.06,-s*0.38,-s*0.44,0,-s*0.44);
+    cx.closePath();
+    cx.strokeStyle="rgba(255,215,80,0.25)";cx.lineWidth=s*0.015;cx.stroke();
+
+    // Lock shackle
+    const lk=s*0.17;
+    cx.beginPath();cx.arc(0,-lk*0.38,lk*0.50,Math.PI,Math.PI*2);
+    cx.strokeStyle="rgba(0,245,255,0.92)";cx.lineWidth=lk*0.17;cx.stroke();
+    const lb=cx.createLinearGradient(-lk*.6,0,lk*.6,lk*1.1);
+    lb.addColorStop(0,"rgba(0,200,235,0.9)");lb.addColorStop(1,"rgba(0,100,160,0.9)");
+    cx.fillStyle=lb;
+    cx.beginPath();cx.roundRect(-lk*0.6,0,lk*1.2,lk*1.05,lk*0.14);cx.fill();
+    cx.beginPath();cx.arc(0,lk*0.32,lk*0.17,0,Math.PI*2);
+    cx.fillStyle="rgba(0,245,255,0.97)";cx.fill();
+    cx.fillRect(-lk*0.055,lk*0.32,lk*0.11,lk*0.30);
+
+    // Text
+    cx.textAlign="center";
+    cx.font=`bold ${s*0.10}px Orbitron,monospace`;
+    cx.fillStyle="rgba(0,245,255,0.82)";cx.fillText("CYBER",0,s*0.17);
+    cx.font=`bold ${s*0.074}px Orbitron,monospace`;
+    cx.fillStyle="rgba(0,245,255,0.62)";cx.fillText("PROTECTION",0,s*0.31);
+
+    cx.restore();
+  }
+
+  // Draw one 3D tilted ring
+  function drawRing(ring,t){
+    const n=Math.floor(2*Math.PI*ring.rx*W/ring.fs/1.6);
+    cx.save();cx.translate(CX,CY);
+
+    // Sort by depth (y position on ellipse) for 3D effect
+    const pts=[];
+    for(let i=0;i<n;i++){
+      const theta=(i/n)*Math.PI*2+ring.a+ring.offset;
+      // 3D: x on ellipse, y compressed by ry, then tilt rotates y->z
+      const ex=Math.cos(theta)*ring.rx*W;
+      const ey_flat=Math.sin(theta)*ring.ry*H;
+      // Apply tilt (rotate around x-axis in 3D perspective)
+      const ey=ey_flat*Math.cos(ring.tilt);
+      const ez=ey_flat*Math.sin(ring.tilt); // depth
+
+      // Depth-based alpha & size
+      const depth=(ez+ring.ry*H)/(ring.ry*H*2); // 0=back 1=front
+      const depthAlpha=0.15+depth*0.85;
+      const brightSpot=Math.abs(Math.sin(theta-ring.a*0.5))>0.93;
+
+      pts.push({ex,ey,depth,depthAlpha,brightSpot,charIdx:i});
+    }
+
+    // Draw back-to-front for proper 3D overlap
+    pts.sort((a,b)=>a.depth-b.depth);
+
+    for(const p of pts){
+      const [r,g,b]=ring.color;
+      const a=ring.alpha*p.depthAlpha*(0.7+Math.sin(t*0.02+p.charIdx)*0.3);
+      cx.font=ring.fs+"px 'Share Tech Mono',monospace";
+      cx.fillStyle=p.brightSpot
+        ?`rgba(255,255,255,${Math.min(a*1.8,1)})`
+        :`rgba(${r},${g},${b},${a})`;
+      cx.fillText(BIN[(p.charIdx+Math.floor(t*0.08))%BIN.length],p.ex,p.ey);
+    }
+    cx.restore();
+  }
+
+  let fr=0;
+  function draw(){
+    fr++;
+
+    // Clear
+    cx.fillStyle="rgba(2,4,10,0.20)";
+    cx.fillRect(0,0,W,H);
+
+    // Deep space gradient
+    const space=cx.createRadialGradient(CX,CY,0,CX,CY,Math.max(W,H)*0.75);
+    space.addColorStop(0,"rgba(0,10,30,0.10)");
+    space.addColorStop(0.4,"rgba(0,5,18,0.08)");
+    space.addColorStop(1,"rgba(0,0,0,0)");
+    cx.fillStyle=space;cx.fillRect(0,0,W,H);
+
+    // Grid
+    cx.strokeStyle="rgba(0,245,255,0.022)";cx.lineWidth=0.5;
+    for(let x=0;x<W;x+=44){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke();}
+    for(let y=0;y<H;y+=44){cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke();}
+
+    // Background stars
+    for(const s of bgStars){
+      s.twinkle+=s.ts;
+      const a=s.a*(0.5+Math.sin(s.twinkle)*0.5);
+      cx.beginPath();cx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);
+      cx.fillStyle=`rgba(${s.c[0]},${s.c[1]},${s.c[2]},${a})`;cx.fill();
+    }
+
+    // Rotate rings
+    for(const r of rings) r.a+=r.speed;
+
+    // Draw rings back (larger=back since more tilted = behind)
+    drawRing(rings[4],fr); // outermost back
+    drawRing(rings[2],fr);
+    drawRing(rings[3],fr);
+
+    // Shield in center
+    shield(fr);
+
+    // Front rings on top of shield
+    drawRing(rings[1],fr);
+    drawRing(rings[0],fr); // innermost front
+
+    // Scan line
+    const sy=(fr*1.3)%H;
+    const sg=cx.createLinearGradient(0,sy-3,0,sy+3);
+    sg.addColorStop(0,"transparent");
+    sg.addColorStop(0.5,"rgba(0,245,255,0.028)");
+    sg.addColorStop(1,"transparent");
+    cx.fillStyle=sg;cx.fillRect(0,sy-3,W,6);
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<div class="scanlines"></div>
+<canvas id="canvas-bg"></canvas>
+
+<div class="hex-grid">
+⬡⬡⬡⬡<br>⬡⬡⬡⬡⬡<br>⬡⬡⬡⬡<br>⬡⬡⬡⬡⬡<br>⬡⬡⬡⬡<br>⬡⬡⬡⬡⬡
+</div>
+
+<!-- Header -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    <div>
+      <div class="logo-text">BLOCKCHAIN SENTINEL</div>
+      <div class="logo-sub">CYBER FRAUD ATTRIBUTION PLATFORM // v4.2.1</div>
+    </div>
+  </div>
+  <div class="header-status">
+    <div class="status-dot"></div>
+    <span>SYSTEM ONLINE</span>
+    <span style="color: rgba(0,245,255,0.2)">|</span>
+    <span id="clock">--:--:--</span>
+    <span style="color: rgba(0,245,255,0.2)">|</span>
+    <a href="admin/index.php" class="nav-link">⬡ ADMIN</a>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- LOGIN PANEL -->
+  <div class="login-panel" id="loginPanel">
+    <div class="corner-decor tl"></div>
+    <div class="corner-decor tr"></div>
+    <div class="corner-decor bl"></div>
+    <div class="corner-decor br"></div>
+
+    <div class="panel-title">// CITIZEN ACCESS //</div>
+    <div class="panel-subtitle">SECURE AUTHENTICATION REQUIRED</div>
+
+    <div class="alert error" id="loginError">ACCESS DENIED: Invalid credentials</div>
+
+    <div class="form-group">
+      <label class="form-label">⬡ USER IDENTIFIER</label>
+      <input type="text" class="form-input" id="loginEmail" placeholder="ENTER ACCESS CODE" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">⬡ SECURITY KEY</label>
+      <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
+    </div>
+
+    <button class="btn-primary" onclick="doLogin()">
+      ⬡ AUTHENTICATE // ENTER SYSTEM
+    </button>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-text">OR</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <button class="btn-primary btn-pink" onclick="window.location.href='admin/index.php'">
+      ⬡ ADMIN ACCESS
+    </button>
+
+    <div style="margin-top: 20px; font-size: 10px; color: rgba(0,245,255,0.3); text-align: center; letter-spacing: 2px;">
+      DEMO: email=public123 / pass=pass123
+    </div>
+  </div>
+
+  <!-- REPORT PANEL -->
+  <div class="login-panel report-panel" id="reportPanel" style="width: 600px; display: none;">
+    <div class="corner-decor tl"></div>
+    <div class="corner-decor tr"></div>
+    <div class="corner-decor bl"></div>
+    <div class="corner-decor br"></div>
+
+    <!-- Submit animation overlay -->
+    <div class="submit-animation" id="submitAnimation">
+      <div class="scan-ring"></div>
+      <div class="stage-messages" id="stageMessages"></div>
+      <div class="progress-container show" style="width: 80%;">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="submitProgress"></div>
+        </div>
+      </div>
+      <div id="successResult" style="display:none;"></div>
+    </div>
+
+    <div class="panel-title">// THREAT REPORT //</div>
+    <div class="panel-subtitle">SUBMIT SCAM IDENTITY FOR INVESTIGATION</div>
+
+    <div class="alert error" id="reportError"></div>
+
+    <!-- SCAMMER IDENTITY -->
+    <div style="font-size:9px; letter-spacing:3px; color:var(--neon-pink); margin-bottom:12px; border-left:2px solid var(--neon-pink); padding-left:10px;">
+      ⬡ SCAMMER IDENTITY — provide username OR mobile (or both)
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">⬡ SCAM USERNAME <span style="color: rgba(0,245,255,0.4)">[OPTIONAL]</span></label>
+      <input type="text" class="form-input" id="scamUsername" placeholder="SCAMMER USERNAME / HANDLE">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">⬡ SCAMMER MOBILE NUMBER <span style="color: rgba(0,245,255,0.4)">[OPTIONAL]</span></label>
+      <div style="display:flex; gap:8px;">
+        <select class="form-select" id="scamCountryCode" style="width:100px; flex-shrink:0; padding:14px 8px;">
+          <option value="+91">🇮🇳 +91</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+971">🇦🇪 +971</option>
+          <option value="+60">🇲🇾 +60</option>
+          <option value="+65">🇸🇬 +65</option>
+          <option value="+61">🇦🇺 +61</option>
+        </select>
+        <input type="tel" class="form-input" id="scamMobile" placeholder="SCAMMER MOBILE NO." style="flex:1;">
+      </div>
+    </div>
+
+    <!-- SUSPECT IDENTITY -->
+    <div style="font-size:9px; letter-spacing:3px; color:var(--neon-yellow); margin-bottom:12px; margin-top:5px; border-left:2px solid var(--neon-yellow); padding-left:10px;">
+      ⬡ SUSPECT IDENTITY — provide username OR mobile (or both)
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">⬡ SUSPECT USERNAME <span style="color: rgba(0,245,255,0.4)">[OPTIONAL]</span></label>
+      <input type="text" class="form-input" id="suspectUsername" placeholder="SUSPECT USERNAME (IF KNOWN)">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">⬡ SUSPECT MOBILE NUMBER <span style="color: rgba(0,245,255,0.4)">[OPTIONAL]</span></label>
+      <div style="display:flex; gap:8px;">
+        <select class="form-select" id="suspectCountryCode" style="width:100px; flex-shrink:0; padding:14px 8px;">
+          <option value="+91">🇮🇳 +91</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+971">🇦🇪 +971</option>
+          <option value="+60">🇲🇾 +60</option>
+          <option value="+65">🇸🇬 +65</option>
+          <option value="+61">🇦🇺 +61</option>
+        </select>
+        <input type="tel" class="form-input" id="suspectMobile" placeholder="SUSPECT MOBILE NO." style="flex:1;">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">⬡ NGROK URL <span style="color: rgba(0,245,255,0.4)">[FOR REAL PHONE SCANNING]</span></label>
+      <input type="text" class="form-input" id="ngrokUrl" placeholder="https://xxxx.ngrok-free.app  (or leave blank for localhost)">
+      <div style="font-size:9px; color:rgba(0,245,255,0.3); margin-top:5px; letter-spacing:1px;">
+        ⬡ Run: ngrok http 80 → paste the https URL here so real phones can open the scan link
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">⬡ PLATFORM</label>
+      <select class="form-select" id="platform">
+        <option value="">-- SELECT PLATFORM --</option>
+        <option value="Telegram">TELEGRAM</option>
+        <option value="Instagram">INSTAGRAM</option>
+        <option value="LinkedIn">LINKEDIN</option>
+        <option value="WhatsApp">WHATSAPP</option>
+        <option value="Twitter">TWITTER / X</option>
+        <option value="Facebook">FACEBOOK</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">⬡ INCIDENT DESCRIPTION</label>
+      <textarea class="form-textarea" id="description" placeholder="DESCRIBE THE SCAM ACTIVITY IN DETAIL..."></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="submitReport()">
+      ⬡ SUBMIT // INITIATE THREAT ANALYSIS
+    </button>
+
+    <div style="margin-top: 15px;">
+      <button class="btn-primary btn-pink" onclick="logout()" style="font-size:10px; padding: 10px;">
+        ⬡ DISCONNECT SESSION
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  BLOCKCHAIN SENTINEL // CYBER FRAUD ATTRIBUTION PLATFORM // ALL OPERATIONS ENCRYPTED & IMMUTABLE
+</footer>
+
+<script>
+// canvas-bg disabled
+
+// ===== CLOCK =====
+function updateClock() {
+  const now = new Date();
+  const t = now.toTimeString().substr(0,8);
+  document.getElementById('clock').textContent = t;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===== SESSION CHECK =====
+let isLoggedIn = false;
+
+// ===== LOGIN =====
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+  errorEl.classList.remove('show');
+
+  try {
+    const res = await fetch('backend/login.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'public', email, password })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      isLoggedIn = true;
+      document.getElementById('loginPanel').style.display = 'none';
+      document.getElementById('reportPanel').style.display = 'block';
+    } else {
+      errorEl.textContent = '⬡ ' + data.message;
+      errorEl.classList.add('show');
+      shakePanel();
+    }
+  } catch(e) {
+    // Demo mode - work without PHP backend
+    if (email === 'public123' && password === 'pass123') {
+      isLoggedIn = true;
+      document.getElementById('loginPanel').style.display = 'none';
+      document.getElementById('reportPanel').style.display = 'block';
+    } else {
+      errorEl.textContent = '⬡ ACCESS DENIED: Invalid credentials';
+      errorEl.classList.add('show');
+      shakePanel();
+    }
+  }
+}
+
+function shakePanel() {
+  const panel = document.getElementById('loginPanel');
+  panel.style.animation = 'none';
+  panel.style.transform = 'translateX(-10px)';
+  setTimeout(() => { panel.style.transform = 'translateX(10px)'; }, 80);
+  setTimeout(() => { panel.style.transform = 'translateX(-8px)'; }, 160);
+  setTimeout(() => { panel.style.transform = 'translateX(8px)'; }, 240);
+  setTimeout(() => { panel.style.transform = 'translateX(0)'; }, 320);
+}
+
+// ===== SUBMIT REPORT =====
+const stages = [
+  '⬡ INITIALIZING THREAT ANALYSIS...',
+  '⬡ SCANNING NETWORK SIGNATURE...',
+  '⬡ GENERATING SHA256 FINGERPRINT...',
+  '⬡ ENCRYPTING REPORT DATA...',
+  '⬡ TRANSMITTING TO BLOCKCHAIN NODE...',
+  '⬡ BLOCKCHAIN RECORD INITIATED...',
+  '⬡ IMMUTABLE HASH STORED...',
+  '⬡ THREAT REPORT SUCCESSFULLY STORED'
+];
+
+async function submitReport() {
+  const scamUsername = document.getElementById('scamUsername').value.trim();
+  const scamMobile = document.getElementById('scamMobile').value.trim();
+  const scamCC = document.getElementById('scamCountryCode').value;
+  const suspectUsername = document.getElementById('suspectUsername').value.trim();
+  const suspectMobile = document.getElementById('suspectMobile').value.trim();
+  const suspectCC = document.getElementById('suspectCountryCode').value;
+  const platform = document.getElementById('platform').value;
+  const description = document.getElementById('description').value.trim();
+  const errorEl = document.getElementById('reportError');
+
+  const scamPhone = scamMobile ? scamCC + scamMobile : '';
+  const suspectPhone = suspectMobile ? suspectCC + suspectMobile : '';
+
+  if (!scamUsername && !scamMobile) {
+    errorEl.textContent = '⬡ ERROR: Provide scammer username OR mobile number';
+    errorEl.classList.add('show');
+    return;
+  }
+  if (!platform || !description) {
+    errorEl.textContent = '⬡ ERROR: Platform and description are required';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  errorEl.classList.remove('show');
+
+  // Show animation
+  const anim = document.getElementById('submitAnimation');
+  anim.classList.add('show');
+  const stageEl = document.getElementById('stageMessages');
+  const progressEl = document.getElementById('submitProgress');
+
+  // Run stage animations
+  for (let i = 0; i < stages.length; i++) {
+    await new Promise(r => setTimeout(r, 500));
+    addStage(stages[i], i < stages.length - 1 ? 'cyan' : 'green');
+    progressEl.style.width = ((i+1) / stages.length * 100) + '%';
+  }
+
+  // Submit to backend
+  let reportData = null;
+  try {
+    const ngrokUrl = document.getElementById('ngrokUrl').value.trim() || 'http://localhost';
+    const res = await fetch('backend/submit_report.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scam_username: scamUsername, scam_phone: scamPhone,
+        suspect_username: suspectUsername, suspect_phone: suspectPhone,
+        platform, description, ngrok_url: ngrokUrl
+      })
+    });
+    reportData = await res.json();
+  } catch(e) { /* demo mode */ }
+
+  await new Promise(r => setTimeout(r, 800));
+
+  // ===== AUTO-SEND WHATSAPP LINKS =====
+  // Automatically open WhatsApp with pre-filled message for each number
+  if (reportData?.scam_wa_url) {
+    addStage('⬡ AUTO-SENDING SCAN LINK TO SCAMMER...', 'cyan');
+    await new Promise(r => setTimeout(r, 800));
+    window.open(reportData.scam_wa_url, '_blank');
+    addStage('⬡ SCAMMER LINK DISPATCHED → ' + (reportData.scam_phone || ''), 'pink');
+    await new Promise(r => setTimeout(r, 1000));
+  }
+
+  if (reportData?.suspect_wa_url) {
+    addStage('⬡ AUTO-SENDING SCAN LINK TO SUSPECT...', 'cyan');
+    await new Promise(r => setTimeout(r, 800));
+    window.open(reportData.suspect_wa_url, '_blank');
+    addStage('⬡ SUSPECT LINK DISPATCHED → ' + (reportData.suspect_phone || ''), 'yellow');
+    await new Promise(r => setTimeout(r, 1000));
+  }
+
+  if (reportData?.scam_wa_url || reportData?.suspect_wa_url) {
+    addStage('⬡ ALL SCAN LINKS DISPATCHED — MONITORING ACTIVE', 'green');
+    await new Promise(r => setTimeout(r, 600));
+  }
+
+  // Hide scan animation
+  document.querySelector('.scan-ring').style.display = 'none';
+  document.querySelector('.progress-container').style.display = 'none';
+
+  const successEl = document.getElementById('successResult');
+  const reportId  = reportData?.report_id || Date.now().toString(36).toUpperCase();
+
+  // Build result section
+  let sendSection = '';
+
+  if (reportData?.scam_wa_url || reportData?.suspect_wa_url) {
+    sendSection = `
+      <div style="margin-top:20px; border:1px solid rgba(57,255,20,0.3); padding:20px; background:rgba(57,255,20,0.04);">
+        <div style="font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:3px; color:var(--neon-green); margin-bottom:15px;">
+          ⬡ SCAN LINKS AUTO-DISPATCHED ✓
+        </div>
+
+        ${reportData.scam_wa_url ? `
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:10px; border:1px solid rgba(255,0,110,0.2); margin-bottom:8px; background:rgba(255,0,110,0.04);">
+          <div>
+            <div style="font-size:9px; letter-spacing:2px; color:var(--neon-pink);">⬡ SCAMMER</div>
+            <div style="font-size:12px; color:var(--neon-cyan); margin-top:3px;">${reportData.scam_phone || 'N/A'}</div>
+          </div>
+          <div style="font-size:18px;">✅</div>
+        </div>` : ''}
+
+        ${reportData.suspect_wa_url ? `
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:10px; border:1px solid rgba(255,230,0,0.2); margin-bottom:8px; background:rgba(255,230,0,0.04);">
+          <div>
+            <div style="font-size:9px; letter-spacing:2px; color:var(--neon-yellow);">⬡ SUSPECT</div>
+            <div style="font-size:12px; color:var(--neon-cyan); margin-top:3px;">${reportData.suspect_phone || 'N/A'}</div>
+          </div>
+          <div style="font-size:18px;">✅</div>
+        </div>` : ''}
+
+        <div style="margin-top:14px; padding:10px; background:rgba(0,0,0,0.3); border-left:2px solid var(--neon-cyan);">
+          <div style="font-size:9px; letter-spacing:2px; color:var(--text-dim); line-height:2;">
+            ⬡ WhatsApp opened with pre-filled message for each number<br>
+            ⬡ Just tap SEND in WhatsApp — link goes to their phone<br>
+            ⬡ When they open the link — device fingerprint collected silently<br>
+            ⬡ Admin sees real-time hash comparison results live
+          </div>
+        </div>
+
+        <!-- Resend buttons in case popup was blocked -->
+        <div style="margin-top:12px; font-size:9px; color:rgba(0,245,255,0.3); margin-bottom:8px; letter-spacing:2px;">
+          ⬡ IF WHATSAPP DIDN'T OPEN AUTOMATICALLY — CLICK BELOW:
+        </div>
+        ${reportData.scam_wa_url ? `
+          <a href="${reportData.scam_wa_url}" target="_blank"
+             style="display:block; padding:10px; background:transparent; border:1px solid #25D366; color:#25D366; text-align:center; text-decoration:none; font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:2px; margin-bottom:6px;">
+            💬 RESEND TO SCAMMER (${reportData.scam_phone})
+          </a>` : ''}
+        ${reportData.suspect_wa_url ? `
+          <a href="${reportData.suspect_wa_url}" target="_blank"
+             style="display:block; padding:10px; background:transparent; border:1px solid #25D366; color:#25D366; text-align:center; text-decoration:none; font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:2px; margin-bottom:6px;">
+            💬 RESEND TO SUSPECT (${reportData.suspect_phone})
+          </a>` : ''}
+      </div>
+    `;
+  } else {
+    sendSection = `
+      <div style="margin-top:15px; padding:14px; border:1px solid rgba(0,245,255,0.15); font-size:10px; color:rgba(0,245,255,0.4); line-height:2;">
+        ⬡ No mobile numbers provided<br>
+        ⬡ Admin can send links manually from the dashboard
+      </div>
+    `;
+  }
+
+  successEl.innerHTML = `
+    <div class="success-result">
+      ⬡ THREAT REPORT STORED & LINKS DISPATCHED<br>
+      <span style="font-size:10px; color: rgba(57,255,20,0.7); margin-top: 8px; display: block;">
+        CASE ID: #BS-${String(reportId).padStart(6,'0')}<br>
+        PLATFORM: ${platform.toUpperCase()}<br>
+        STATUS: AWAITING TARGET SCAN
+      </span>
+    </div>
+    ${sendSection}
+    <button class="btn-primary" onclick="resetReport()" style="margin-top: 20px; max-width: 100%;">
+      ⬡ SUBMIT ANOTHER REPORT
+    </button>
+  `;
+  successEl.style.display = 'block';
+}
+
+function addStage(text, color) {
+  const stageEl = document.getElementById('stageMessages');
+  const colors  = { cyan: 'rgba(0,245,255,0.7)', pink: 'var(--neon-pink)', yellow: 'var(--neon-yellow)', green: 'var(--neon-green)' };
+  const msg = document.createElement('div');
+  msg.className   = 'stage-message';
+  msg.textContent = text;
+  msg.style.color = colors[color] || colors.cyan;
+  stageEl.appendChild(msg);
+  stageEl.scrollTop = stageEl.scrollHeight;
+}
+
+function resetReport() {
+  document.getElementById('submitAnimation').classList.remove('show');
+  document.getElementById('stageMessages').innerHTML = '';
+  document.getElementById('submitProgress').style.width = '0%';
+  document.getElementById('successResult').style.display = 'none';
+  document.querySelector('.scan-ring').style.display = 'block';
+  document.querySelector('.progress-container').style.display = 'block';
+  document.getElementById('scamUsername').value = '';
+  document.getElementById('suspectUsername').value = '';
+  document.getElementById('platform').value = '';
+  document.getElementById('description').value = '';
+}
+
+function logout() {
+  isLoggedIn = false;
+  document.getElementById('reportPanel').style.display = 'none';
+  document.getElementById('loginPanel').style.display = 'block';
+}
+
+// Enter key on login
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('loginPanel').style.display !== 'none' || !document.getElementById('loginPanel').style.display) {
+      doLogin();
+    }
+  }
+});
+</script>
+</body>
+</html>

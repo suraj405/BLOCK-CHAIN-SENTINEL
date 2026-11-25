@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\xampp\\htdocs\\blockchain-sentinel\\blockchain\\contracts\\IdentityStorage.sol": {
+      "lastModificationDate": 1773380162597,
+      "contentHash": "93270350b0a64b2181991a594e63bfbe",
+      "sourceName": "contracts/IdentityStorage.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "IdentityStorage"
+      ]
+    }
+  }
+}

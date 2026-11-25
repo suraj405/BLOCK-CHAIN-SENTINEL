@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASS=sentinel_pass
+      - DB_NAME=blockchain_sentinel
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./node_service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - RPC_URL=http://127.0.0.1:8545
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=sentinel_pass
+      - MYSQL_DATABASE=blockchain_sentinel
+    volumes:
+      - db_data:/var/lib/mysql
+      # Automatically initialize database with the schema
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+volumes:
+  db_data:
